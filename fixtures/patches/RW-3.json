@@ -1,0 +1,13 @@
+{
+  "id": "RW-3",
+  "expect": "full_rewrite",
+  "old": "一段说明文字。",
+  "fields": {
+    "target": "B01",
+    "category": "scheme",
+    "claim": "重建章节",
+    "replace": "# 第一章 总览\n内容 A\n\n# 第二章 细节\n内容 B 并引用 B02"
+  },
+  "doc_full": "一段说明文字。\n\n# 其它\nB02 块",
+  "note": "RW-3 整章标题重建"
+}

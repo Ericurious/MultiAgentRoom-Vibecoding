@@ -1,0 +1,13 @@
+{
+  "id": "SUB-3",
+  "expect": "ok",
+  "old": "结论：通过率为 95%。",
+  "fields": {
+    "target": "B01",
+    "category": "fact",
+    "claim": "结论数字与原文不符，应为 92%",
+    "replace": "结论：通过率为 92%。"
+  },
+  "doc_full": "结论：通过率为 95%。",
+  "note": "事实改正"
+}

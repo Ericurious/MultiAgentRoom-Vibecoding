@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MultiAgentRoom</title>
+  <link rel="stylesheet" href="/styles/tokens.css" />
+  <link rel="stylesheet" href="/styles/shell.css" />
+  <link rel="stylesheet" href="/styles/views.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <aside class="activity" aria-label="主导航">
+      <div class="logo" title="MultiAgentRoom">
+        <span class="logo-dot"></span>
+      </div>
+      <nav class="activity-nav">
+        <button type="button" class="act active" data-view="room" title="聊天室">
+          <span class="act-ico">◎</span>
+          <span class="act-lab">房间</span>
+        </button>
+        <button type="button" class="act" data-view="models" title="模型">
+          <span class="act-ico">◇</span>
+          <span class="act-lab">模型</span>
+        </button>
+        <button type="button" class="act" data-view="agents" title="成员">
+          <span class="act-ico">✦</span>
+          <span class="act-lab">成员</span>
+        </button>
+      </nav>
+      <div class="activity-foot">
+        <span class="pill soft">本机</span>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="chrome">
+        <div class="chrome-left">
+          <p class="eyebrow" id="chromeEyebrow">CHAT REVIEW</p>
+          <h1 id="chromeTitle">聊天室</h1>
+        </div>
+        <div class="chrome-right">
+          <span id="livePill" class="pill">Live</span>
+          <div id="toast" class="toast" hidden></div>
+        </div>
+      </header>
+
+      <div class="viewport">
+        <!-- ROOM -->
+        <section class="view show" id="view-room" data-view="room">
+          <div class="tri" id="roomTri">
+            <aside class="col col-left card" id="colLeft">
+              <div class="card-h">
+                <span class="eyebrow">Rooms</span>
+                <button type="button" class="btn btn-primary btn-sm" id="btnNewRoom">新建</button>
+              </div>
+              <input class="input" id="roomSearch" placeholder="筛选房间…" autocomplete="off" />
+              <div class="list" id="roomList"></div>
+              <div class="card-sep"></div>
+              <span class="eyebrow">邀请 ready Agent</span>
+              <select class="input" id="inviteAgent">
+                <option value="">（加载中…）</option>
+              </select>
+              <p class="sub" id="inviteHint">下拉只是候选；点「邀请入房」后才会出现在右侧成员。</p>
+              <button type="button" class="btn btn-primary btn-block" id="btnInvite">邀请入房</button>
+              <div class="card-sep"></div>
+              <span class="eyebrow">本房已入成员</span>
+              <pre class="pre" id="memberList">（尚未进入房间）</pre>
+              <div class="card-sep"></div>
+              <span class="eyebrow">工作区</span>
+              <input class="input" id="workspacePath" placeholder="D:\path\to\project" />
+              <button type="button" class="btn btn-ghost btn-block" id="btnWorkspace">绑定目录</button>
+              <p class="sub" id="workspaceHint">绑定后可读目录/文件；写文件需评判通过后的写权限。</p>
+            </aside>
+
+            <div class="sash" id="sashLeft" data-sash="left" title="拖动调整宽度" role="separator" aria-orientation="vertical"></div>
+
+            <section class="col col-main chat-pane" id="colMain">
+              <header class="chat-top">
+                <div class="chat-top-main">
+                  <h2 id="roomTitle">选择或创建房间</h2>
+                  <span class="badge" id="phaseBadge">Idle</span>
+                </div>
+                <p class="sub" id="roomSub">聊天区 · 原话与共享稿</p>
+              </header>
+
+              <div class="chat-feed" id="feed">
+                <div class="chat-empty">发送问题后，对话会出现在这里</div>
+              </div>
+
+              <footer class="chat-bottom">
+                <div class="judge" id="judgeRow"></div>
+                <div class="attach-row">
+                  <label class="btn btn-ghost btn-sm attach-btn" for="fileAttach">附件</label>
+                  <input type="file" id="fileAttach" multiple hidden />
+                  <div class="attach-chips" id="attachChips"></div>
+                </div>
+                <div class="composer">
+                  <textarea class="input grow composer-input" id="askInput" rows="2" placeholder="输入消息… Enter 发送，Shift+Enter 换行；可点附件加入文件"></textarea>
+                  <button type="button" class="btn btn-primary" id="btnAsk">发送</button>
+                </div>
+              </footer>
+            </section>
+
+            <div class="sash" id="sashRight" data-sash="right" title="拖动调整宽度" role="separator" aria-orientation="vertical"></div>
+
+            <aside class="col col-right" id="colRight">
+              <div class="card">
+                <span class="eyebrow">Status</span>
+                <p class="status-line" id="statusMode">当前：空闲</p>
+                <div class="flow" id="flowSteps"></div>
+                <div class="actions tight">
+                  <button type="button" class="btn btn-primary btn-sm" id="btnDemo">演示推进</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="btnInterrupt">Frozen</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="btnResume">恢复</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="btnRefreshRoom">刷新</button>
+                </div>
+              </div>
+              <div class="card">
+                <span class="eyebrow">Agent</span>
+                <pre class="pre" id="agentStatus">（无成员）</pre>
+              </div>
+              <div class="card">
+                <span class="eyebrow">资格锁</span>
+                <pre class="pre" id="lockText">尚未首答</pre>
+              </div>
+              <div class="card">
+                <span class="eyebrow">议程</span>
+                <pre class="pre" id="agendaText">（未进入房间）</pre>
+              </div>
+              <div class="card monitor-card">
+                <div class="card-h">
+                  <span class="eyebrow">事件监控</span>
+                  <span class="pill soft" id="eventCount">0</span>
+                </div>
+                <div class="event-log" id="eventMonitor">
+                  <div class="muted">系统事件会出现在这里，不占用聊天区。</div>
+                </div>
+              </div>
+              <div class="card">
+                <span class="eyebrow">工具</span>
+                <pre class="pre mono" id="toolsStatus">加载中…</pre>
+              </div>
+              <div class="card">
+                <span class="eyebrow">最终回复</span>
+                <pre class="pre accent" id="finalText">未通过</pre>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- MODELS -->
+        <section class="view" id="view-models" data-view="models">
+          <div class="stack">
+            <div class="card">
+              <span class="eyebrow">添加端点</span>
+              <h2 class="card-title">只需 API 地址 + Key</h2>
+              <p class="sub">OpenAI 兼容口（DeepSeek / 通义 / Kimi 等）。添加后自动拉模型并探活。</p>
+              <div class="grid-2">
+                <label class="field">
+                  <span>API 地址</span>
+                  <input class="input" id="mBase" value="https://api.deepseek.com" />
+                </label>
+                <label class="field">
+                  <span>API Key</span>
+                  <input class="input" id="mKey" type="password" placeholder="sk-…" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span>显示名（可选）</span>
+                  <input class="input" id="mName" />
+                </label>
+                <label class="field">
+                  <span>模型（可选）</span>
+                  <input class="input" id="mModel" list="modelList" />
+                  <datalist id="modelList"></datalist>
+                </label>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-ghost" id="btnDiscover">拉取可用模型</button>
+                <button type="button" class="btn btn-primary" id="btnAddModel">一键添加并探活</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <h3>已配置</h3>
+                <span class="pill soft" id="healthLive">Live</span>
+              </div>
+              <div class="table" id="modelTable"></div>
+            </div>
+
+            <div class="grid-2">
+              <div class="card">
+                <span class="eyebrow">完整报错</span>
+                <pre class="pre mono block" id="modelError">选中模型后显示，可反复查看。</pre>
+              </div>
+              <div class="card">
+                <span class="eyebrow">Chat 测试</span>
+                <div class="composer tight">
+                  <input class="input grow" id="chatPrompt" value="请用一句话回复：pong" />
+                  <button type="button" class="btn btn-primary" id="btnChat">发送</button>
+                </div>
+                <pre class="pre mono block" id="chatOut">选中模型后测试 Key。</pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- AGENTS -->
+        <section class="view" id="view-agents" data-view="agents">
+          <div class="stack narrow">
+            <div class="card">
+              <span class="eyebrow">创建</span>
+              <h2 class="card-title">Agent 成员</h2>
+              <p class="sub">仅可绑定 enabled + ready 的模型。</p>
+              <div class="grid-2">
+                <label class="field">
+                  <span>显示名</span>
+                  <input class="input" id="aName" value="Worker" />
+                </label>
+                <label class="field">
+                  <span>绑定模型</span>
+                  <select class="input" id="aModel"></select>
+                </label>
+              </div>
+              <button type="button" class="btn btn-primary" id="btnCreateAgent">创建 Agent</button>
+            </div>
+            <div class="card">
+              <h3>列表</h3>
+              <div class="table" id="agentTable"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="statusbar">
+        <span>MultiAgentRoom · Web + 本机 API</span>
+        <span id="statusHint">127.0.0.1</span>
+      </footer>
+    </div>
+  </div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

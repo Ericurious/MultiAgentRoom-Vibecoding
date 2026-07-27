@@ -1,0 +1,18 @@
+{
+  "id": "RW-2",
+  "expect": "full_rewrite",
+  "old": "短块引言",
+  "fields": {
+    "target": "B01",
+    "category": "scheme",
+    "claim": "大段替换",
+    "replace": "片段甲：其它内容很少ABC 片段乙：其它内容很少DEF 片段丙：其它内容很少GHI 再附加大量无关正文用于撑长度AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  },
+  "doc_full": "短块引言\n其它段落填充内容，用于构成足够长的共享稿全文，避免短文误触发。补充说明一二三四。再补充说明五六七八九十。",
+  "other_blocks": {
+    "B02": "片段甲：其它内容很少ABC",
+    "B03": "片段乙：其它内容很少DEF",
+    "B04": "片段丙：其它内容很少GHI"
+  },
+  "note": "RW-2 包含 ≥3 个非 target 块原文片段"
+}

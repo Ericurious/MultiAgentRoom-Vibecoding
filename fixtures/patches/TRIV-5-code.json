@@ -1,0 +1,14 @@
+{
+  "id": "TRIV-5-code",
+  "expect": "trivial",
+  "kind_hint": "code",
+  "old": "def run():\n    return 1\n",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "tweak wording",
+    "replace": "def run():\n    return 1  # ok\n"
+  },
+  "doc_full": "def run():\n    return 1\n",
+  "note": "代码低价值注释"
+}

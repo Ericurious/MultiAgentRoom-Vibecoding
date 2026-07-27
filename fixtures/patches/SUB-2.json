@@ -1,0 +1,13 @@
+{
+  "id": "SUB-2",
+  "expect": "ok",
+  "old": "使用 requests 抓取页面 HTML 后解析。",
+  "fields": {
+    "target": "B01",
+    "category": "scheme",
+    "claim": "request 方案改为 Playwright",
+    "replace": "使用 Playwright 启动浏览器抓取动态页面后再解析。"
+  },
+  "doc_full": "使用 requests 抓取页面 HTML 后解析。",
+  "note": "方案方向"
+}

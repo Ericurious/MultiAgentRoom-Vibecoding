@@ -1,0 +1,13 @@
+{
+  "id": "SUB-4",
+  "expect": "ok",
+  "old": "open(path).read()",
+  "fields": {
+    "target": "B01",
+    "category": "logic",
+    "claim": "缺错误处理会导致崩溃",
+    "replace": "try:\n    open(path).read()\nexcept OSError:\n    return None"
+  },
+  "doc_full": "open(path).read()",
+  "note": "致命遗漏，可 <100 字"
+}

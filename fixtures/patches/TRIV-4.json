@@ -1,0 +1,13 @@
+{
+  "id": "TRIV-4",
+  "expect": "trivial",
+  "old": "点击保存\n点击保存\n退出",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "稍微改改",
+    "replace": "点击保存\n退出"
+  },
+  "doc_full": "点击保存\n点击保存\n退出",
+  "note": "删除重复步骤"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "SUB-1",
+  "expect": "ok",
+  "old": "def fetch(url):\n    return get(url)\n",
+  "fields": {
+    "target": "B01",
+    "category": "api",
+    "claim": "改函数签名与控制流以支持超时",
+    "replace": "def fetch(url, timeout=30):\n    if not url:\n        raise ValueError('url')\n    return get(url, timeout=timeout)\n"
+  },
+  "doc_full": "def fetch(url):\n    return get(url)\n",
+  "note": "实现关键"
+}

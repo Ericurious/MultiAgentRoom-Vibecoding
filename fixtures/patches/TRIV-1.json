@@ -1,0 +1,13 @@
+{
+  "id": "TRIV-1",
+  "expect": "trivial",
+  "old": "很好",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "润色",
+    "replace": "非常好"
+  },
+  "doc_full": "很好",
+  "note": "纯形容词"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "TRIV-5",
+  "expect": "trivial",
+  "kind_hint": "zh",
+  "old": "本段说明如何配置路径。",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "优化一下",
+    "replace": "本段说明如何配置路径参数。"
+  },
+  "doc_full": "本段说明如何配置路径。",
+  "note": "低价值短改（中文净变更）"
+}

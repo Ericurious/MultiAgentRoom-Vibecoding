@@ -1,0 +1,13 @@
+{
+  "id": "TRIV-2",
+  "expect": "trivial",
+  "old": "先安装依赖然后运行测试",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "改改措辞",
+    "replace": "先安装依赖，然后运行测试！"
+  },
+  "doc_full": "先安装依赖然后运行测试",
+  "note": "标点润色不改结论"
+}

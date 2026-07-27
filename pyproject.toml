@@ -1,0 +1,18 @@
+# MultiAgentRoom — Windows 本机多 Agent 聊天室
+# ENV 骨架（T-ENV）：标准库即可运行，无强制第三方依赖
+
+[project]
+name = "multi-agent-room"
+version = "0.1.0"
+description = "Multi-agent chat room local host (ENV skeleton)"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[project.scripts]
+multi-agent-room = "multi_agent_room.app:main"
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.3"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

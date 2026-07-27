@@ -1,0 +1,14 @@
+{
+  "id": "TRIV-5-en",
+  "expect": "trivial",
+  "kind_hint": "en",
+  "old": "Configure the path and restart the service carefully.",
+  "fields": {
+    "target": "B01",
+    "category": "other",
+    "claim": "polish",
+    "replace": "Configure the path and restart the service gently."
+  },
+  "doc_full": "Configure the path and restart the service carefully.",
+  "note": "英文词级净变更低价值"
+}
