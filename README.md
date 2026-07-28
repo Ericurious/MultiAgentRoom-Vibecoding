@@ -1,91 +1,85 @@
 # MultiAgentRoom
 
-**MultiAgentRoom**（多 Agent 聊天室）是一款运行于 Windows 本机的多智能体协作宿主，实现 **Chat Review v2** 协议：多个由大模型驱动的 Agent 在共享草稿上协同审阅与修订，明确区分「工人输出」与「裁决」，仅在通过门禁后，才允许向本地文件系统进行受控交付。
+> **Vibecoding 建出来的多模型聊天室。**  
+> 不是又一个「单模型对话框套壳」，而是让多个大脑在同一间房里审稿、打补丁、做裁决——然后才允许碰你的磁盘。
+
+**MultiAgentRoom**（多 Agent 聊天室）是 Windows 本机多智能体协作宿主。当前仓库有两条主线，**我们先把第一条做扎实**：
+
+| 重点 | 是什么 | 状态 |
+|------|--------|------|
+| **① Vibecoding 建平台** | 用对话驱动把规格写成可运行宿主（Chat Review、门禁、工具、Web UI） | **进行中 · 本仓库主线** |
+| **② 平台上的业务编排** | 在稳定宿主上叠具体业务流水线与技能 | 后续展开 |
+
+英文版：[README.en.md](README.en.md) · Vibecoding 手记：[docs/vibecoding.md](docs/vibecoding.md)
 
 | | |
 |---|---|
-| **产品** | MultiAgentRoom（多 Agent 聊天室） |
+| **产品** | MultiAgentRoom |
 | **版本** | 0.1.0 |
-| **运行环境** | Windows 10/11 · Python ≥ 3.11 |
-| **部署形态** | 单机宿主；模型 API 可走远端；**数据与进程留在本机** |
-| **协议范围** | 见 `docs/tasks.md`：P0 MVP + P1a/P1b；P2 仅登记标题 |
-
-产品需求与验收标准以 [`docs/spec.md`](docs/spec.md) 为准。  
-实现顺序与任务状态见 [`docs/tasks.md`](docs/tasks.md)。
-
-> English README: [`README.en.md`](README.en.md)
+| **环境** | Windows 10/11 · Python ≥ 3.11 |
+| **形态** | 单机宿主；模型 API 可远端；**数据与进程留在本机** |
+| **协议** | Chat Review v2（P0 + P1a/P1b）；P2 仅登记 |
 
 ---
 
-## 1. 产品目标
+## 先读这三份（导航）
+
+| 文档 | 一句话 | 适合谁 |
+|------|--------|--------|
+| [**操作流程手册**](docs/workflow-ops.md) | 从装模型、建房到 Judge Approve / 工具落盘的逐步操作 | 使用者、演示、验收 |
+| [**提示词目录**](docs/prompts-catalog.md) | W1–W4、J1、工具循环、Criti、纠错回灌、协作提示词全文 | 改协议、调模型行为 |
+| [**Vibecoding 建台手记**](docs/vibecoding.md) | 本阶段怎么用对话继续完善平台、提示词骨架与优先级 | 继续写代码的协作者 |
+
+规格与任务：[docs/spec.md](docs/spec.md) · [docs/tasks.md](docs/tasks.md)  
+能力与功能清单：[多Agent聊天室能力项.md](多Agent聊天室能力项.md) · [多模型协作Agent功能清单.md](多模型协作Agent功能清单.md)
+
+---
+
+## 1. 平台在做什么
 
 为开源与闭源大模型提供共用「聊天室」：
 
-1. 用户提出问题或任务。
-2. 一个或多个 **Agent**（各自绑定独立模型会话）在 **共享草稿** 上协作：审阅、局部补丁、合并或驳回。
-3. **裁决模型**（单模型降级时由用户裁决）发出 **Judge Approve（裁决通过）**。
-4. 仅在该门禁之后，系统才可生成 **最终回复**，并可选调用本机工具（读写文件、执行已授权命令、交付产物）。
-
-### 1.1 主交互模型（Chat Review v2）
+1. 你提出问题或任务（**原话钉选**，防多轮跑题）。  
+2. 一个或多个 **Agent**（独立模型会话）在 **共享草稿** 上协作：审阅、局部补丁、合并或驳回。  
+3. **裁决模型**（仅一个 ready 模型时 → 你来当裁判）发出 **Judge Approve**。  
+4. 门禁打开后，才生成 **最终回复**，并可选调用本机工具做真实读写/交付。
 
 ```
-用户提问（房间在提问前保持空闲）
-  → 角色拆分：裁决者 vs 工人（多模型可用时）
-  → 工人：首答 → 静默自检
-  → 有实质问题：补丁 → 裁决者合并 → 确认（仅 ChangedSet）
-  → 收敛干净 → Judge Approve → 最终回复 / 可执行路径
-  → （可选）用户触发交付 / 执行（须已通过裁决）
+提问 → 首答稿 → 审阅/补丁 → 评议合入或打回 → 确认轮 → Judge Approve → 最终回复
+                              └─ 需要落盘时：工具循环 / 执行补充（步骤零→四）
 ```
 
-### 1.2 协议约束
-
-| 约束 | 说明 |
-|------|------|
-| 会话隔离 | Agent 不得共享厂商侧缓存；私有思维存储对其他 Agent 不可读 |
-| 白板通道 | Agent 间交换限于共享草稿与房间事件总线 |
-| 首答 ≠ 裁决者 | 按 **模型配置 ID** 比较；仅一个 ready 模型时走 **降级 A**（用户裁决） |
-| 批准分层 | 静默检查 / 静默同意 / 合并 ≠ **Judge Approve**；仅后者打开最终回复与执行门禁 |
-| 原话钉住 | 裁决上下文须保留用户钉住的原问题，抑制多轮漂移 |
-
-本阶段非目标（云端多租户 SaaS、以远端服务器改文件为主模式、完整 A2A 死信系统等）见 `docs/spec.md` §1.2.1。
+风味一句话：**先把稿子辩清楚，再碰文件系统。**
 
 ---
 
-## 2. 能力路线图
+## 2. Vibecoding 这一条线（当前重点）
 
-| 阶段 | 目标 | 状态（对照 `docs/tasks.md`） |
-|------|------|------------------------------|
-| **P0** | 多模型 Chat Review 直至最终回复（M1–M8、ENV、GATE、SEC 等） | 已完成 |
-| **P1a** | 本机工具、基础记忆、授权交付（M9/M10/M12） | 已完成 |
-| **P1b** | 轻量执行（M11） | 已完成 |
-| **P2** | 浏览器加固、快照运维、Excel / 游戏等 | 仅标题登记 |
+本仓库大部分代码与文档，是按「愿景 → 规格 → 任务 → 实现 → 回写验收」长出来的。  
+若你要继续完善平台，请从这里进：
 
----
+- 读：[docs/vibecoding.md](docs/vibecoding.md)  
+- 复制开场提示词：[docs/prompts-catalog.md#vibecoding-协作提示词](docs/prompts-catalog.md#vibecoding-协作提示词)  
+- 按任务改：[docs/tasks.md](docs/tasks.md)
 
-## 3. 运行时架构
-
-默认界面为 **本机 Web 前端**，由进程内 HTTP API 提供服务（监听 `127.0.0.1`，猫咖风格软 UI）。业务逻辑位于 Python 服务层 `src/multi_agent_room/`。
-
-| 层级 | 职责 |
-|------|------|
-| Web 静态界面 | 房间、模型、Agent、对话、工具活动 |
-| 本机 API | `/api/*`，封装 Model / Agent / Room 服务 |
-| 工具循环 | 绑定工作区后，提供类 Cursor 的 `dir_list` / `glob_search` / `file_read` / `file_write` / `search_replace` / `file_delete`（仅真实文件；**拒绝符号链接**） |
-| 可选 tk 壳 | 通过 `--tk` 启用旧版桌面 UI |
-
-绑定工作区目录后，对话回复可进入 **Agent 工具循环**，使目录读取与文件写入落到磁盘，而非仅口头描述。
+原始口述材料仍保留在 [`指导书.txt`](指导书.txt)，方便对照「当初为什么这样设计」。
 
 ---
 
-## 4. 快速开始
+## 3. 操作流程（摘要 + 深链）
 
-### 4.1 环境要求
+完整逐步说明见 **[操作流程手册](docs/workflow-ops.md)**。下面是地图：
 
-- Windows 10 或 11  
-- 已加入 `PATH` 的 Python 3.11 或更高版本  
-- 可访问 OpenAI 兼容的模型接口（如 DeepSeek）
+| 环节 | 你要做什么 | 深链 |
+|------|------------|------|
+| 启动 | 源码拉起 Web UI | [启动与环境](docs/workflow-ops.md#1-启动与环境) |
+| 配模型 / Agent / 房 | 五步走到能提问 | [首次配置五步](docs/workflow-ops.md#2-首次配置五步) |
+| Chat Review | 主范式：审稿与裁决 | [Chat Review 主流程](docs/workflow-ops.md#3-chat-review-主流程) |
+| 绑工作区 | 真实写文件、反幻觉 | [工作区与工具落盘](docs/workflow-ops.md#4-工作区与工具落盘) |
+| 执行补充 | 环境踩点 → 骨架分段 → 沙盒 → Criti | [步骤零→四](docs/workflow-ops.md#5-执行阶段补充步骤零四) |
+| 门禁 / 降级 | 单模型用户裁判等 | [降级与门禁](docs/workflow-ops.md#6-降级与门禁) |
 
-### 4.2 启动（推荐源码方式）
+### 30 秒启动
 
 ```powershell
 cd D:\CursorProject
@@ -93,56 +87,69 @@ $env:PYTHONPATH = "D:\CursorProject\src"
 python -m multi_agent_room
 ```
 
-浏览器打开 `http://127.0.0.1:8765/`。
-
-便捷启动器（优先源码）：
-
-- `启动 MultiAgentRoom.vbs`
-- `启动 MultiAgentRoom.bat`
-
-| 模式 | 命令 |
-|------|------|
-| Web UI（默认） | `python -m multi_agent_room` |
-| 旧版 tk UI | `python -m multi_agent_room --tk` |
-| 冒烟测试（无界面） | `python -m multi_agent_room --smoke` |
-
-> 若存在打包产物 `dist\...\MultiAgentRoom.exe`，其反映的是**某次构建快照**，可能落后于当前源码界面。开发请优先用源码启动；仅在需要时用 `scripts\build_exe.ps1` 重新打包。
-
-### 4.3 首次使用检查清单
-
-1. **模型** — 添加 API Base URL 与 API Key（OpenAI 兼容）；发现模型并探测，直至状态为 `ready`。  
-2. **Agent** — 仅绑定「已启用且 ready」的模型创建 Agent。  
-3. **工作区** — 绑定本机目录（工具与交付的写入边界）。  
-4. **房间** — 创建房间，邀请 ready Agent，提出问题（钉住）。  
-5. **Chat Review** — 审阅 / 合并 / 确认 → **Judge Approve** → 最终回复；需要时再交付。
-
-探测失败会保留完整错误面板便于排查。非 `ready` 的模型不能作为房间大脑绑定。
+打开 `http://127.0.0.1:8765/`。也可用 `启动 MultiAgentRoom.vbs` / `.bat`。
 
 ---
 
-## 5. 数据、密钥与安全
+## 4. 提示词（摘要 + 深链）
 
-| 项目 | 约定 |
-|------|------|
-| 数据根目录 | `%AppData%\MultiAgentRoom\`（配置 / 数据 / 日志） |
-| API 密钥 | Windows DPAPI `SecretStore`；配置中仅存 `apiKeyRef`（**文件中不存明文密钥**） |
-| 工作区 | 按房间绑定本机路径；写入须经工作区绑定与授权 / write token 门禁 |
-| 符号链接 | 文件工具拒绝符号链接路径；仅写入真实文件 |
+运行时提示词以源码为准，目录页有可复制全文：
 
----
+| 提示词 | 角色 | 深链 |
+|--------|------|------|
+| W1 | 工人首答 | [W1](docs/prompts-catalog.md#w1-首答) |
+| W2 | 静默自检 | [W2](docs/prompts-catalog.md#w2-静默自检) |
+| W3 | 审阅 Read/Patch | [W3](docs/prompts-catalog.md#w3-审阅响应) |
+| W4 | 确认轮（仅 ChangedSet） | [W4](docs/prompts-catalog.md#w4-确认轮) |
+| J1 | 评议 / JudgeApprove | [J1](docs/prompts-catalog.md#j1-评议) |
+| 工具循环 | 绑工作区后的 Cursor 式落盘 | [工具系统提示](docs/prompts-catalog.md#agent-工具循环系统提示) |
+| Criti | 业务审查（能跑 ≠ 正确） | [Criti](docs/prompts-catalog.md#criti-业务审查模板) |
+| 纠错回灌 | 沙盒报错扔回 Agent | [纠错模板](docs/prompts-catalog.md#纠错回灌模板) |
 
-## 6. 文档索引
-
-| 文档 | 作用 |
-|------|------|
-| [`docs/spec.md`](docs/spec.md) | 愿景、模块、验收、非目标、术语表 |
-| [`docs/tasks.md`](docs/tasks.md) | 实现顺序与任务清单 |
-| [`docs/user-guide.md`](docs/user-guide.md) | 使用与打包说明（可能略滞后于默认 Web UI） |
-| [`docs/user-inputs-reserve.md`](docs/user-inputs-reserve.md) | 设计讨论中归档的产品方向输入 |
+实现文件：`src/multi_agent_room/prompts.py` · `tool_loop.py`
 
 ---
 
-## 7. 开发
+## 5. 运行时架构（极简）
+
+| 层 | 职责 |
+|----|------|
+| Web 静态 UI | 房间、模型、Agent、对话、事件监控 |
+| 本机 API | `/api/*` → Model / Agent / Room |
+| 工具循环 | 真实文件工具；拒绝符号链接；表格用 `.csv` |
+| 可选 tk | `--tk` 旧桌面壳 |
+
+业务代码：`src/multi_agent_room/`
+
+---
+
+## 6. 数据与安全
+
+| 项 | 约定 |
+|----|------|
+| 数据根 | `%AppData%\MultiAgentRoom\` |
+| API Key | DPAPI；配置只存引用；**禁止进提示词明文** |
+| 写入 | 须工作区绑定 + 授权 / write token |
+| 符号链接 | 工具拒绝 |
+
+---
+
+## 7. 文档地图
+
+| 文档 | 角色 |
+|------|------|
+| [docs/vibecoding.md](docs/vibecoding.md) | 建台哲学与协作提示词骨架 |
+| [docs/workflow-ops.md](docs/workflow-ops.md) | 操作流程（逐步） |
+| [docs/prompts-catalog.md](docs/prompts-catalog.md) | 提示词全文目录 |
+| [docs/spec.md](docs/spec.md) | 正式规格与验收 |
+| [docs/tasks.md](docs/tasks.md) | 任务状态 |
+| [docs/user-guide.md](docs/user-guide.md) | 使用与打包（部分内容可能略滞后于 Web 默认） |
+| [多Agent聊天室能力项.md](多Agent聊天室能力项.md) | 能力项总表 |
+| [多模型协作Agent功能清单.md](多模型协作Agent功能清单.md) | 功能实现要点 |
+
+---
+
+## 8. 开发速查
 
 ```powershell
 cd D:\CursorProject
@@ -150,19 +157,14 @@ $env:PYTHONPATH = "D:\CursorProject\src"
 python -m unittest discover -s tests -q
 ```
 
-- 包入口：`python -m multi_agent_room` → `multi_agent_room.app:main`  
-- 主代码：`src/multi_agent_room/`  
-- Web 资源：`src/multi_agent_room/web_static/`  
-- 项目元数据：`pyproject.toml`（运行时以标准库为主；可选 PyInstaller 依赖见 `[project.optional-dependencies].build`）
+---
+
+## 9. 许可证
+
+以仓库根目录 `LICENSE` 为准（若创建仓库时已选择）。
 
 ---
 
-## 8. 许可证
+## 一句话
 
-本仓库若已在 GitHub 创建时选择许可证（例如 Apache-2.0），以仓库根目录 `LICENSE` 文件为准。若尚无 `LICENSE`，公开分发前请按组织要求补全。
-
----
-
-## 9. 一句话总结
-
-**MultiAgentRoom 是 Windows 本机多模型聊天室：Agent 在 Chat Review v2 下围绕共享草稿协作，只有 Judge Approve 之后才会解锁最终回复与受控本机交付。**
+**先用 Vibecoding 把聊天室宿主磨利；让多个模型在共享稿上吵清楚，Judge Approve 之后，再允许它们碰你的文件。**
